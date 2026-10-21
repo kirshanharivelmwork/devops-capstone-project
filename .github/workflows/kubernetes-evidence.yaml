@@ -33,7 +33,7 @@ jobs:
           docker images accounts-service:ci --format "table {{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.CreatedSince}}\t{{.Size}}" | tee kube-images
 
       - name: Load image into Kind
-        run: kind load docker-image accounts-service:ci
+        run: kind load docker-image accounts-service:ci --name chart-testing
 
       - name: Deploy application to Kubernetes
         run: |
