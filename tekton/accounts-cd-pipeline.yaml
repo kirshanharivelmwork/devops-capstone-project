@@ -86,12 +86,138 @@ spec:
         echo
 ---
 apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: clean-accounts-workspace
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: clean
+      image: busybox:1.36
+      command: ["sh", "-c"]
+      args:
+        - |
+          set -eu
+          rm -rf /workspace/source/repo
+          echo "Workspace cleanup completed"
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: clone-accounts-repository
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: clone
+      image: alpine/git:2.47.2
+      command: ["git"]
+      args: ["clone", "--depth=1", "https://github.com/kirshanharivelmwork/devops-capstone-project.git", "/workspace/source/repo"]
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: lint-accounts-flake8
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: lint
+      image: python:3.9-slim
+      command: ["sh", "-c"]
+      args:
+        - |
+          set -eu
+          python -m pip install --quiet flake8==7.1.2
+          cd /workspace/source/repo
+          echo "Running Flake8 on Accounts service and tests"
+          flake8 service tests
+          echo "Flake8 passed"
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: test-accounts-nosetests
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: nosetests
+      image: python:3.9-slim
+      command: ["sh", "-c"]
+      args:
+        - |
+          set -eu
+          cd /workspace/source/repo
+          python -m pip install --quiet -r requirements.txt
+          echo "Running nosetests on real Accounts API"
+          coverage run -m nose -v tests
+          coverage report -m
+          echo "Nosetests passed"
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: build-and-push-accounts-image
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: build-and-push
+      image: gcr.io/kaniko-project/executor:v1.23.2
+      command: ["/kaniko/executor"]
+      args:
+        - "--context=dir:///workspace/source/repo"
+        - "--dockerfile=/workspace/source/repo/Dockerfile"
+        - "--destination=registry.default.svc.cluster.local:5000/accounts-service:ci"
+        - "--insecure"
+---
+---
+apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
   name: accounts-cd
 spec:
+  workspaces:
+    - name: source
   tasks:
+    - name: workspace-cleanup
+      taskRef:
+        name: clean-accounts-workspace
+      workspaces:
+        - name: source
+          workspace: source
+    - name: repository-clone
+      runAfter: ["workspace-cleanup"]
+      taskRef:
+        name: clone-accounts-repository
+      workspaces:
+        - name: source
+          workspace: source
+    - name: flake8-lint
+      runAfter: ["repository-clone"]
+      taskRef:
+        name: lint-accounts-flake8
+      workspaces:
+        - name: source
+          workspace: source
+    - name: unit-tests-nosetests
+      runAfter: ["flake8-lint"]
+      taskRef:
+        name: test-accounts-nosetests
+      workspaces:
+        - name: source
+          workspace: source
+    - name: image-build-and-push
+      runAfter: ["unit-tests-nosetests"]
+      taskRef:
+        name: build-and-push-accounts-image
+      workspaces:
+        - name: source
+          workspace: source
     - name: deploy
+      runAfter: ["image-build-and-push"]
       taskRef:
         name: deploy-accounts
     - name: verify-rollout
