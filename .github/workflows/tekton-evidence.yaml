@@ -36,6 +36,14 @@ jobs:
           kubectl wait --for=condition=Available deployment/tekton-pipelines-webhook -n tekton-pipelines --timeout=300s
           kubectl get pods -n tekton-pipelines
 
+      - name: Install persistent volume provisioner and image registry
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.31/deploy/local-path-storage.yaml
+          kubectl rollout status deployment/local-path-provisioner -n local-path-storage --timeout=180s
+          kubectl apply -f tekton/registry.yaml
+          kubectl rollout status deployment/accounts-registry --timeout=180s
+          kubectl get storageclass,pods,services
+
       - name: Install Accounts continuous delivery resources
         run: |
           kubectl create configmap accounts-deployment-yaml --from-file=accounts.yaml=k8s/accounts.yaml
@@ -45,7 +53,7 @@ jobs:
       - name: Execute real Tekton PipelineRun
         run: |
           kubectl create -f tekton/accounts-cd-run.yaml
-          if ! kubectl wait --for=condition=Succeeded=True pipelinerun/accounts-cd-run --timeout=360s; then
+          if ! kubectl wait --for=condition=Succeeded=True pipelinerun/accounts-cd-run --timeout=660s; then
             kubectl describe pipelinerun accounts-cd-run
             kubectl get pods -o wide
             exit 1
