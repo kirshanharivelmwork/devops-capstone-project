@@ -1,0 +1,104 @@
+# Real in-cluster continuous delivery pipeline for the Customer Accounts API.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: accounts-pipeline
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: accounts-pipeline-deployer
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch", "create", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["services", "pods"]
+    verbs: ["get", "list", "watch", "create", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: accounts-pipeline-deployer
+subjects:
+  - kind: ServiceAccount
+    name: accounts-pipeline
+    namespace: default
+roleRef:
+  kind: Role
+  name: accounts-pipeline-deployer
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: deploy-accounts
+spec:
+  steps:
+    - name: apply
+      image: registry.k8s.io/kubectl:v1.32.12
+      command: ["kubectl"]
+      args: ["apply", "-f", "/manifests/accounts.yaml"]
+      volumeMounts:
+        - name: manifests
+          mountPath: /manifests
+  volumes:
+    - name: manifests
+      configMap:
+        name: accounts-deployment-yaml
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: check-accounts-rollout
+spec:
+  steps:
+    - name: rollout
+      image: registry.k8s.io/kubectl:v1.32.12
+      command: ["kubectl"]
+      args: ["rollout", "status", "deployment/accounts-service", "--timeout=180s"]
+    - name: resources
+      image: registry.k8s.io/kubectl:v1.32.12
+      command: ["kubectl"]
+      args: ["get", "deployments,pods,replicasets,services", "-l", "app=accounts-service", "-o", "wide"]
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: smoke-test-accounts
+spec:
+  steps:
+    - name: health
+      image: curlimages/curl:8.11.1
+      script: |
+        #!/bin/sh
+        set -eu
+        echo "Verifying deployed Accounts health endpoint on port 8080"
+        curl --fail --silent --show-error http://accounts-service.default.svc.cluster.local:8080/health
+        echo
+    - name: list-accounts
+      image: curlimages/curl:8.11.1
+      script: |
+        #!/bin/sh
+        set -eu
+        echo "Verifying deployed Accounts listing endpoint"
+        curl --fail --silent --show-error http://accounts-service.default.svc.cluster.local:8080/accounts
+        echo
+---
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: accounts-cd
+spec:
+  tasks:
+    - name: deploy
+      taskRef:
+        name: deploy-accounts
+    - name: verify-rollout
+      runAfter: ["deploy"]
+      taskRef:
+        name: check-accounts-rollout
+    - name: smoke-test
+      runAfter: ["verify-rollout"]
+      taskRef:
+        name: smoke-test-accounts
