@@ -30,7 +30,7 @@ jobs:
 
       - name: Record real Docker image details
         run: |
-          docker images accounts-service:ci --format "table {{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.CreatedSince}}\t{{.Size}}" | tee kube-images
+          docker images accounts-service:ci --format "table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.CreatedSince}}\t{{.Size}}" | tee kube-images
 
       - name: Load image into Kind
         run: kind load docker-image accounts-service:ci --name chart-testing
