@@ -1,0 +1,78 @@
+name: Kubernetes Deployment Evidence
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - k8s/**
+      - .github/workflows/kubernetes-evidence.yaml
+      - service/**
+      - requirements.txt
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-and-capture:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Create temporary Kubernetes cluster
+        uses: helm/kind-action@v1.12.0
+
+      - name: Build Docker image
+        run: docker build -t accounts-service:ci .
+
+      - name: Record real Docker image details
+        run: |
+          docker images accounts-service:ci --format "table {{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.CreatedSince}}\t{{.Size}}" | tee kube-images
+
+      - name: Load image into Kind
+        run: kind load docker-image accounts-service:ci
+
+      - name: Deploy application to Kubernetes
+        run: |
+          kubectl apply -f k8s/accounts.yaml
+          if ! kubectl rollout status deployment/accounts-service --timeout=240s; then
+            kubectl get all -o wide
+            kubectl describe pods -l app=accounts-service
+            kubectl logs deployment/accounts-service --all-containers=true || true
+            exit 1
+          fi
+
+      - name: Record real Kubernetes resources
+        run: kubectl get deployments,pods,replicasets,services -o wide | tee kube-deploy-accounts
+
+      - name: Read deployed Accounts JSON on port 8080
+        run: |
+          kubectl port-forward service/accounts-service 8080:8080 > "$RUNNER_TEMP/port-forward.log" 2>&1 &
+          success=0
+          for attempt in $(seq 1 40); do
+            if curl --fail --silent --show-error http://127.0.0.1:8080/ -o kube-app-output; then
+              success=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$success" -ne 1 ]; then
+            cat "$RUNNER_TEMP/port-forward.log"
+            exit 1
+          fi
+          echo "Actual Kubernetes Accounts response (port 8080):"
+          cat kube-app-output
+          echo
+          python -m json.tool kube-app-output
+
+      - name: Upload verified deployment evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-kubernetes-evidence
+          path: |
+            kube-app-output
+            kube-images
+            kube-deploy-accounts
