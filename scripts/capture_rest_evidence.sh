@@ -46,9 +46,9 @@ echo
 
 delete_file="evidence/rest-delete-done"
 delete_body="{\"id\":${account_id}}"
-printf "%s\\n" "\\$ curl -i -X DELETE ${base_url}/accounts -H 'Content-Type: application/json' -d '${delete_body}'" > "$delete_file"
-curl -sS -i -X DELETE "${base_url}/accounts" \\
-  -H 'Content-Type: application/json' \\
+printf "%s\n" "\$ curl -i -X DELETE ${base_url}/accounts -H 'Content-Type: application/json' -d '${delete_body}'" > "$delete_file"
+curl -sS -i -X DELETE "${base_url}/accounts" \
+  -H 'Content-Type: application/json' \
   -d "$delete_body" | tee -a "$delete_file"
 echo
 
