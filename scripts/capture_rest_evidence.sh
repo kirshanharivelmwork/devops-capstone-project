@@ -17,7 +17,9 @@ account_id=$(python - "$create_file" <<'PY'
 import json
 import sys
 text = open(sys.argv[1], encoding="utf-8").read()
-body = text[text.index("{"):]
+body = text[text.rfind("{"):]
+# The command printed above contains request JSON; the final JSON object
+# is the real CREATE response body returned by the running service.
 data = json.loads(body)
 assert isinstance(data.get("id"), int), "CREATE did not return an account ID"
 print(data["id"])
