@@ -1,0 +1,42 @@
+name: Capture REST API Evidence
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  capture-rest-responses:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out actual Customer Accounts application
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install application dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Run Customer Accounts microservice on port 8000
+        run: |
+          python -m flask --app service run --host 127.0.0.1 --port 8000 > /tmp/accounts-server.log 2>&1 &
+          echo $! > /tmp/accounts-server.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/accounts-server.log
+          exit 1
+      - name: Capture CREATE LIST READ UPDATE DELETE cURL outputs
+        run: bash scripts/capture_rest_evidence.sh
+      - name: Upload actual REST API evidence files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rest-api-curl-evidence
+          path: evidence/rest-*-done
+          if-no-files-found: warn
