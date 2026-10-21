@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: accounts-service
+  labels:
+    app: accounts-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: accounts-service
+  template:
+    metadata:
+      labels:
+        app: accounts-service
+    spec:
+      containers:
+        - name: accounts-service
+          image: accounts-service:ci
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            # HTTP is used only for the temporary CI Kind cluster.
+            # Keep HTTPS enforcement enabled for a public deployment.
+            - name: TALISMAN_FORCE_HTTPS
+              value: "false"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: accounts-service
+  labels:
+    app: accounts-service
+spec:
+  selector:
+    app: accounts-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP
