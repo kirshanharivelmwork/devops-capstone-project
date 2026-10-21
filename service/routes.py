@@ -9,6 +9,11 @@ accounts = Blueprint("accounts", __name__)
 
 
 @accounts.get("/")
+def index():
+    """Return the Account REST API reference metadata."""
+    return jsonify({"name": "Account REST API Service", "version": "1.0"}), 200
+
+
 @accounts.get("/health")
 def health():
     """Provide a simple health check."""
@@ -71,12 +76,26 @@ def update_account(account_id):
     return jsonify(account.serialize()), 200
 
 
-@accounts.delete("/accounts/<int:account_id>")
-def delete_account(account_id):
-    """Delete a customer account."""
+def _remove_account(account_id):
+    """Delete an explicitly identified record, never the entire collection."""
     account = db.session.get(Account, account_id)
     if account is None:
         return jsonify({"error": "Account not found"}), 404
     db.session.delete(account)
     db.session.commit()
     return "", 204
+
+
+@accounts.delete("/accounts/<int:account_id>")
+def delete_account(account_id):
+    """Delete an account using its usual resource URL."""
+    return _remove_account(account_id)
+
+
+@accounts.delete("/accounts")
+def delete_account_collection_alias():
+    """Accept the reference collection URL with an explicit JSON account ID."""
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict) or type(data.get("id")) is not int:
+        return jsonify({"error": "Integer account id is required"}), 400
+    return _remove_account(data["id"])
