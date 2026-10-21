@@ -10,5 +10,14 @@ spec:
     name: accounts-cd
   taskRunTemplate:
     serviceAccountName: accounts-pipeline
+  workspaces:
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 1Gi
   timeouts:
-    pipeline: "7m"
+    pipeline: "12m"
