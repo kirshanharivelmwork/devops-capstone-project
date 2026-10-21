@@ -20,6 +20,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
       - name: Run Customer Accounts microservice on port 8000
+        env:
+          TALISMAN_FORCE_HTTPS: "false"
         run: |
           python -m flask --app service run --host 127.0.0.1 --port 8000 > /tmp/accounts-server.log 2>&1 &
           echo $! > /tmp/accounts-server.pid
