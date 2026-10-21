@@ -45,8 +45,11 @@ curl -sS -i -X PUT "${base_url}/accounts/${account_id}" \
 echo
 
 delete_file="evidence/rest-delete-done"
-printf "%s\n" "\$ curl -i -X DELETE ${base_url}/accounts/${account_id}" > "$delete_file"
-curl -sS -i -X DELETE "${base_url}/accounts/${account_id}" | tee -a "$delete_file"
+delete_body="{\"id\":${account_id}}"
+printf "%s\\n" "\\$ curl -i -X DELETE ${base_url}/accounts -H 'Content-Type: application/json' -d '${delete_body}'" > "$delete_file"
+curl -sS -i -X DELETE "${base_url}/accounts" \\
+  -H 'Content-Type: application/json' \\
+  -d "$delete_body" | tee -a "$delete_file"
 echo
 
 printf 'Saved genuine REST API evidence files in evidence/:\n'
