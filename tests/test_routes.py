@@ -62,3 +62,47 @@ class AccountsRouteTests(unittest.TestCase):
         self.assertEqual(self.client.post("/accounts", data="invalid").status_code, 400)
         self.assertEqual(self.client.put("/accounts/999", json={}).status_code, 404)
         self.assertEqual(self.client.delete("/accounts/999").status_code, 404)
+
+    def test_security_headers(self):
+        """Talisman attaches browser security headers to API responses."""
+        response = self.client.get("/health")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["X-Frame-Options"], "DENY")
+        self.assertIn("default-src 'self'", response.headers["Content-Security-Policy"])
+
+    def test_cors_allowed_origin(self):
+        """Configured browser origins receive the CORS allowance."""
+        response = self.client.get(
+            "/accounts", headers={"Origin": "http://localhost:3000"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers.get("Access-Control-Allow-Origin"),
+            "http://localhost:3000",
+        )
+
+    def test_cors_blocked_origin(self):
+        """Unknown browser origins are not granted CORS access."""
+        response = self.client.get(
+            "/accounts", headers={"Origin": "https://untrusted.example"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("Access-Control-Allow-Origin", response.headers)
+
+    def test_cors_preflight(self):
+        """CORS preflight permits an allowed POST with JSON content."""
+        response = self.client.options(
+            "/accounts",
+            headers={
+                "Origin": "http://localhost:3000",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "Content-Type",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers.get("Access-Control-Allow-Origin"),
+            "http://localhost:3000",
+        )
+        self.assertIn("POST", response.headers["Access-Control-Allow-Methods"])
+        self.assertIn("content-type", response.headers["Access-Control-Allow-Headers"].lower())
