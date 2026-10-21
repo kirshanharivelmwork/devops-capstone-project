@@ -1,0 +1,85 @@
+name: Tekton CD Pipeline Evidence
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - tekton/**
+      - .github/workflows/tekton-evidence.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run-tekton-delivery:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out Accounts repository
+        uses: actions/checkout@v4
+
+      - name: Create temporary Kubernetes cluster
+        uses: helm/kind-action@v1.12.0
+
+      - name: Build and load real Accounts Docker image
+        run: |
+          docker build -t accounts-service:ci .
+          kind load docker-image accounts-service:ci --name chart-testing
+
+      - name: Install Tekton Pipelines controller
+        run: |
+          kubectl apply --filename https://infra.tekton.dev/tekton-releases/pipeline/latest/release.yaml
+          kubectl wait --for=condition=Established crd/pipelines.tekton.dev --timeout=180s
+          kubectl wait --for=condition=Established crd/pipelineruns.tekton.dev --timeout=180s
+          kubectl wait --for=condition=Available deployment/tekton-pipelines-controller -n tekton-pipelines --timeout=300s
+          kubectl wait --for=condition=Available deployment/tekton-pipelines-webhook -n tekton-pipelines --timeout=300s
+          kubectl get pods -n tekton-pipelines
+
+      - name: Install Accounts continuous delivery resources
+        run: |
+          kubectl create configmap accounts-deployment-yaml --from-file=accounts.yaml=k8s/accounts.yaml
+          kubectl apply -f tekton/accounts-cd-pipeline.yaml
+          kubectl get tasks,pipelines
+
+      - name: Execute real Tekton PipelineRun
+        run: |
+          kubectl create -f tekton/accounts-cd-run.yaml
+          if ! kubectl wait --for=condition=Succeeded=True pipelinerun/accounts-cd-run --timeout=360s; then
+            kubectl describe pipelinerun accounts-cd-run
+            kubectl get pods -o wide
+            exit 1
+          fi
+          kubectl get pipelinerun accounts-cd-run
+
+      - name: Record complete PipelineRun and TaskRun logs
+        if: always()
+        run: |
+          {
+            echo '$ kubectl get pipelinerun accounts-cd-run'
+            kubectl get pipelinerun accounts-cd-run
+            echo
+            echo '$ kubectl get taskruns -l tekton.dev/pipelineRun=accounts-cd-run'
+            kubectl get taskruns -l tekton.dev/pipelineRun=accounts-cd-run
+            echo
+            echo '$ kubectl get deployments,pods,replicasets,services -l app=accounts-service'
+            kubectl get deployments,pods,replicasets,services -l app=accounts-service
+            echo
+            while IFS= read -r pod; do
+              if [ -n "$pod" ]; then
+                echo "==== Complete Tekton TaskRun logs for pod: $pod ===="
+                kubectl logs "$pod" --all-containers=true --prefix=true
+                echo
+              fi
+            done < <(kubectl get taskruns -l tekton.dev/pipelineRun=accounts-cd-run -o jsonpath='{range .items[*]}{.status.podName}{"\n"}{end}')
+            echo "==== PipelineRun final condition ===="
+            kubectl get pipelinerun accounts-cd-run -o jsonpath='{.status.conditions[0].type}{": "}{.status.conditions[0].status}{" / "}{.status.conditions[0].reason}{"\n"}'
+          } | tee pipelinerun.txt
+
+      - name: Upload real Tekton pipeline log artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-tekton-pipelinerun
+          path: pipelinerun.txt
+          if-no-files-found: warn
