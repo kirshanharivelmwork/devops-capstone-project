@@ -132,7 +132,7 @@ class AccountsRouteTests(unittest.TestCase):
         response = self.client.post(
             "/accounts", json={"name": "Pat", "email": "pat@example.org", "address": "1 Main St"}
         )
-        self.assertRegex(response.json["date_joined"], r"^\\d{4}-\\d{2}-\\d{2}$")
+        self.assertRegex(response.json["date_joined"], r"^\d{4}-\d{2}-\d{2}$")
 
     def test_read_unknown_account(self):
         """An unknown account returns 404 on GET."""
