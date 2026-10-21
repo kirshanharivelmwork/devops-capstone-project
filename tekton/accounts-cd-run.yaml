@@ -1,0 +1,14 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: accounts-cd-run
+  labels:
+    app: accounts-service
+    project: ibm-devops-capstone
+spec:
+  pipelineRef:
+    name: accounts-cd
+  taskRunTemplate:
+    serviceAccountName: accounts-pipeline
+  timeouts:
+    pipeline: "7m"
