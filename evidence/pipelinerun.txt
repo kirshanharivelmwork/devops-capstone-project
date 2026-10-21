@@ -1,0 +1,269 @@
+$ kubectl get pipelinerun accounts-cd-run
+NAME              SUCCEEDED   REASON      STARTTIME   COMPLETIONTIME
+accounts-cd-run   True        Succeeded   81s         5s
+
+$ kubectl get taskruns -l tekton.dev/pipelineRun=accounts-cd-run
+NAME                                   SUCCEEDED   REASON      STARTTIME   COMPLETIONTIME
+accounts-cd-run-deploy                 True        Succeeded   24s         18s
+accounts-cd-run-flake8-lint            True        Succeeded   65s         57s
+accounts-cd-run-image-build-and-push   True        Succeeded   43s         24s
+accounts-cd-run-repository-clone       True        Succeeded   70s         65s
+accounts-cd-run-smoke-test             True        Succeeded   11s         5s
+accounts-cd-run-unit-tests-nosetests   True        Succeeded   57s         43s
+accounts-cd-run-verify-rollout         True        Succeeded   18s         11s
+accounts-cd-run-workspace-cleanup      True        Succeeded   81s         70s
+
+$ kubectl get deployments,pods,replicasets,services -l app=accounts-service
+NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/accounts-service   3/3     3            3           19s
+
+NAME                                           READY   STATUS      RESTARTS   AGE
+pod/accounts-cd-run-deploy-pod                 0/1     Completed   0          24s
+pod/accounts-cd-run-flake8-lint-pod            0/1     Completed   0          65s
+pod/accounts-cd-run-image-build-and-push-pod   0/1     Completed   0          43s
+pod/accounts-cd-run-repository-clone-pod       0/1     Completed   0          70s
+pod/accounts-cd-run-smoke-test-pod             0/2     Completed   0          11s
+pod/accounts-cd-run-unit-tests-nosetests-pod   0/1     Completed   0          57s
+pod/accounts-cd-run-verify-rollout-pod         0/2     Completed   0          18s
+pod/accounts-cd-run-workspace-cleanup-pod      0/1     Completed   0          81s
+pod/accounts-service-5d9774f55-g7fsk           1/1     Running     0          19s
+pod/accounts-service-5d9774f55-kqqhf           1/1     Running     0          19s
+pod/accounts-service-5d9774f55-x5xk8           1/1     Running     0          19s
+
+NAME                                         DESIRED   CURRENT   READY   AGE
+replicaset.apps/accounts-service-5d9774f55   3         3         3       19s
+
+NAME                       TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+service/accounts-service   ClusterIP   10.96.150.15   <none>        8080/TCP   19s
+
+==== Complete Tekton TaskRun logs for pod: accounts-cd-run-deploy-pod ====
+[pod/accounts-cd-run-deploy-pod/prepare] 2026/10/21 20:38:40 Entrypoint initialization
+[pod/accounts-cd-run-deploy-pod/step-apply] deployment.apps/accounts-service created
+[pod/accounts-cd-run-deploy-pod/step-apply] service/accounts-service created
+
+==== Complete Tekton TaskRun logs for pod: accounts-cd-run-flake8-lint-pod ====
+[pod/accounts-cd-run-flake8-lint-pod/prepare] 2026/10/21 20:37:59 Entrypoint initialization
+[pod/accounts-cd-run-flake8-lint-pod/step-lint] WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+[pod/accounts-cd-run-flake8-lint-pod/step-lint] 
+[pod/accounts-cd-run-flake8-lint-pod/step-lint] [notice] A new release of pip is available: 23.0.1 -> 26.0.1
+[pod/accounts-cd-run-flake8-lint-pod/step-lint] [notice] To update, run: pip install --upgrade pip
+[pod/accounts-cd-run-flake8-lint-pod/step-lint] Running Flake8 on Accounts service and tests
+[pod/accounts-cd-run-flake8-lint-pod/step-lint] Flake8 passed
+
+==== Complete Tekton TaskRun logs for pod: accounts-cd-run-image-build-and-push-pod ====
+[pod/accounts-cd-run-image-build-and-push-pod/prepare] 2026/10/21 20:38:21 Entrypoint initialization
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0000] Using dockerignore file: /workspace/source/repo/.dockerignore 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0000] Retrieving image manifest python:3.9-slim    
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0000] Retrieving image python:3.9-slim from registry index.docker.io 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0000] Built cross stage deps: map[]                
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0000] Retrieving image manifest python:3.9-slim    
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0000] Returning cached image manifest              
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0000] Executing 0 build triggers                   
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0000] Building stage 'python:3.9-slim' [idx: '0', base-idx: '-1'] 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0000] Unpacking rootfs as cmd COPY requirements.txt /app/requirements.txt requires it. 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0002] ENV PYTHONDONTWRITEBYTECODE=1     PYTHONUNBUFFERED=1 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0002] WORKDIR /app                                 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0002] Cmd: workdir                                 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0002] Changed working directory to /app            
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0002] Creating directory /app with uid -1 and gid -1 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0002] Taking snapshot of files...                  
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0002] COPY requirements.txt /app/requirements.txt  
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0002] Taking snapshot of files...                  
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0002] RUN python -m pip install --no-cache-dir -r /app/requirements.txt 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0002] Initializing snapshotter ...                 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0002] Taking snapshot of full filesystem...        
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0003] Cmd: /bin/sh                                 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0003] Args: [-c python -m pip install --no-cache-dir -r /app/requirements.txt] 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0003] Running: [/bin/sh -c python -m pip install --no-cache-dir -r /app/requirements.txt] 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting Flask==3.1.0
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading flask-3.1.0-py3-none-any.whl (102 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 103.0/103.0 kB 4.7 MB/s eta 0:00:00
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting Flask-SQLAlchemy==3.1.1
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading flask_sqlalchemy-3.1.1-py3-none-any.whl (25 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting Flask-Cors==5.0.1
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading flask_cors-5.0.1-py3-none-any.whl (11 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting Flask-Talisman==1.1.0
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading flask_talisman-1.1.0-py2.py3-none-any.whl (18 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting psycopg2-binary==2.9.10
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading psycopg2_binary-2.9.10-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.0 MB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.0/3.0 MB 50.6 MB/s eta 0:00:00
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting gunicorn==23.0.0
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading gunicorn-23.0.0-py3-none-any.whl (85 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 85.0/85.0 kB 216.2 MB/s eta 0:00:00
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting pytest==8.3.5
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading pytest-8.3.5-py3-none-any.whl (343 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 343.6/343.6 kB 244.8 MB/s eta 0:00:00
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting nose==1.3.7
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading nose-1.3.7-py3-none-any.whl (154 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 154.7/154.7 kB 226.2 MB/s eta 0:00:00
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting flake8==7.1.2
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading flake8-7.1.2-py2.py3-none-any.whl (57 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 57.7/57.7 kB 204.5 MB/s eta 0:00:00
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting coverage==7.6.12
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading coverage-7.6.12-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (236 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 236.6/236.6 kB 229.1 MB/s eta 0:00:00
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting itsdangerous>=2.2
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting Jinja2>=3.1.2
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 134.9/134.9 kB 240.5 MB/s eta 0:00:00
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting importlib-metadata>=3.6
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading importlib_metadata-8.7.1-py3-none-any.whl (27 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting click>=8.1.3
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading click-8.1.8-py3-none-any.whl (98 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 98.2/98.2 kB 223.8 MB/s eta 0:00:00
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting Werkzeug>=3.1
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading werkzeug-3.1.9-py3-none-any.whl (228 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 228.7/228.7 kB 234.5 MB/s eta 0:00:00
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting blinker>=1.9
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading blinker-1.9.0-py3-none-any.whl (8.5 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting sqlalchemy>=2.0.16
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading sqlalchemy-2.0.55-cp39-cp39-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (3.4 MB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.4/3.4 MB 191.3 MB/s eta 0:00:00
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting packaging
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading packaging-26.3-py3-none-any.whl (129 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 130.0/130.0 kB 241.8 MB/s eta 0:00:00
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting exceptiongroup>=1.0.0rc8
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading exceptiongroup-1.3.1-py3-none-any.whl (16 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting tomli>=1
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading tomli-2.5.0-py3-none-any.whl (14 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting pluggy<2,>=1.5
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading pluggy-1.6.0-py3-none-any.whl (20 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting iniconfig
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading iniconfig-2.1.0-py3-none-any.whl (6.0 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting pycodestyle<2.13.0,>=2.12.0
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading pycodestyle-2.12.1-py2.py3-none-any.whl (31 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting mccabe<0.8.0,>=0.7.0
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading mccabe-0.7.0-py2.py3-none-any.whl (7.3 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting pyflakes<3.3.0,>=3.2.0
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading pyflakes-3.2.0-py2.py3-none-any.whl (62 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 62.7/62.7 kB 204.0 MB/s eta 0:00:00
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting typing-extensions>=4.6.0
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 45.6/45.6 kB 141.2 MB/s eta 0:00:00
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting zipp>=3.20
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading zipp-3.23.1-py3-none-any.whl (10 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting MarkupSafe>=2.0
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading markupsafe-3.0.4-cp39-cp39-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (20 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Collecting greenlet>=1
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]   Downloading greenlet-3.2.5-cp39-cp39-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (587 kB)
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 587.5/587.5 kB 227.0 MB/s eta 0:00:00
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Installing collected packages: nose, Flask-Talisman, zipp, typing-extensions, tomli, pyflakes, pycodestyle, psycopg2-binary, pluggy, packaging, mccabe, MarkupSafe, itsdangerous, iniconfig, greenlet, coverage, click, blinker, Werkzeug, sqlalchemy, Jinja2, importlib-metadata, gunicorn, flake8, exceptiongroup, pytest, Flask, Flask-SQLAlchemy, Flask-Cors
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] Successfully installed Flask-3.1.0 Flask-Cors-5.0.1 Flask-SQLAlchemy-3.1.1 Flask-Talisman-1.1.0 Jinja2-3.1.6 MarkupSafe-3.0.4 Werkzeug-3.1.9 blinker-1.9.0 click-8.1.8 coverage-7.6.12 exceptiongroup-1.3.1 flake8-7.1.2 greenlet-3.2.5 gunicorn-23.0.0 importlib-metadata-8.7.1 iniconfig-2.1.0 itsdangerous-2.2.0 mccabe-0.7.0 nose-1.3.7 packaging-26.3 pluggy-1.6.0 psycopg2-binary-2.9.10 pycodestyle-2.12.1 pyflakes-3.2.0 pytest-8.3.5 sqlalchemy-2.0.55 tomli-2.5.0 typing-extensions-4.16.0 zipp-3.23.1
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [notice] A new release of pip is available: 23.0.1 -> 26.0.1
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [notice] To update, run: pip install --upgrade pip
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0013] Taking snapshot of full filesystem...        
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0014] COPY . /app                                  
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0014] Taking snapshot of files...                  
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0014] RUN mkdir -p /app/instance && chown -R 10001:10001 /app 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0014] Cmd: /bin/sh                                 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0014] Args: [-c mkdir -p /app/instance && chown -R 10001:10001 /app] 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0014] Running: [/bin/sh -c mkdir -p /app/instance && chown -R 10001:10001 /app] 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0014] Taking snapshot of full filesystem...        
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0014] USER 10001                                   
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0014] Cmd: USER                                    
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0014] EXPOSE 8080                                  
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0014] Cmd: EXPOSE                                  
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0014] Adding exposed port: 8080/tcp                
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0014] CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "service:app"] 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0014] Pushing image to registry.default.svc.cluster.local:5000/accounts-service:ci 
+[pod/accounts-cd-run-image-build-and-push-pod/step-build-and-push] [36mINFO[0m[0015] Pushed registry.default.svc.cluster.local:5000/accounts-service@sha256:2c4a1c36140e6f14072356feafb620e55786579efb095c3898db82c96b6ab158 
+
+==== Complete Tekton TaskRun logs for pod: accounts-cd-run-repository-clone-pod ====
+[pod/accounts-cd-run-repository-clone-pod/step-clone] Cloning into '/workspace/source/repo'...
+[pod/accounts-cd-run-repository-clone-pod/prepare] 2026/10/21 20:37:54 Entrypoint initialization
+
+==== Complete Tekton TaskRun logs for pod: accounts-cd-run-smoke-test-pod ====
+[pod/accounts-cd-run-smoke-test-pod/step-health] Verifying deployed Accounts health endpoint on port 8080
+[pod/accounts-cd-run-smoke-test-pod/step-health] {"service":"Customer Accounts","status":"OK"}
+[pod/accounts-cd-run-smoke-test-pod/step-health] 
+[pod/accounts-cd-run-smoke-test-pod/step-list-accounts] Verifying deployed Accounts listing endpoint
+[pod/accounts-cd-run-smoke-test-pod/step-list-accounts] []
+[pod/accounts-cd-run-smoke-test-pod/step-list-accounts] 
+[pod/accounts-cd-run-smoke-test-pod/prepare] 2026/10/21 20:38:53 Entrypoint initialization
+[pod/accounts-cd-run-smoke-test-pod/place-scripts] 2026/10/21 20:38:55 Decoded script /tekton/scripts/script-0-cpntz
+[pod/accounts-cd-run-smoke-test-pod/place-scripts] 2026/10/21 20:38:55 Decoded script /tekton/scripts/script-1-hst7v
+
+==== Complete Tekton TaskRun logs for pod: accounts-cd-run-unit-tests-nosetests-pod ====
+[pod/accounts-cd-run-unit-tests-nosetests-pod/prepare] 2026/10/21 20:38:07 Entrypoint initialization
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] 
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] [notice] A new release of pip is available: 23.0.1 -> 26.0.1
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] [notice] To update, run: pip install --upgrade pip
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] Running nosetests on real Accounts API
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] nose.config: INFO: Ignoring files matching ['^\\.', '^_', '^setup\\.py$']
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] The root route identifies the Account REST API Service. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] Configured browser origins receive the CORS allowance. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] Unknown browser origins are not granted CORS access. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] CORS preflight permits an allowed POST with JSON content. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] An account receives a valid default join date. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] Non-JSON requests are rejected. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] A CREATE request must include an address. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] A CREATE request must include an email. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] A CREATE request must include a name. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] A customer can be created, read, listed, updated, and deleted. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] A created account contains an integer account identifier. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] DELETE /accounts with an explicit ID deletes the selected account. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] DELETE /accounts never deletes an entire collection by accident. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] An unknown account returns 404 on DELETE. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] A new service starts with an empty account listing. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] The health endpoint is available. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] It should return a CORS header ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] It should return security headers ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] An unknown account returns 404 on GET. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] Talisman attaches browser security headers to API responses. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] Non-JSON update requests are rejected. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] Updated customer names remain readable. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] Updated phone details remain readable. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] An unknown account returns 404 on PUT. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] Invalid account payloads are rejected. ... ok
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] 
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] ----------------------------------------------------------------------
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] Ran 25 tests in 0.653s
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] 
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] OK
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] Name                  Stmts   Miss  Cover   Missing
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] ---------------------------------------------------
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] service/__init__.py      20      0   100%
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] service/models.py        13      0   100%
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] service/routes.py        63      1    98%   74
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] ---------------------------------------------------
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] TOTAL                    96      1    99%
+[pod/accounts-cd-run-unit-tests-nosetests-pod/step-nosetests] Nosetests passed
+
+==== Complete Tekton TaskRun logs for pod: accounts-cd-run-verify-rollout-pod ====
+[pod/accounts-cd-run-verify-rollout-pod/step-rollout] Waiting for deployment "accounts-service" rollout to finish: 0 of 3 updated replicas are available...
+[pod/accounts-cd-run-verify-rollout-pod/step-rollout] Waiting for deployment "accounts-service" rollout to finish: 1 of 3 updated replicas are available...
+[pod/accounts-cd-run-verify-rollout-pod/step-rollout] Waiting for deployment "accounts-service" rollout to finish: 2 of 3 updated replicas are available...
+[pod/accounts-cd-run-verify-rollout-pod/step-rollout] deployment "accounts-service" successfully rolled out
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] NAME                               READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS         IMAGES                SELECTOR
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] deployment.apps/accounts-service   3/3     3            3           7s    accounts-service   accounts-service:ci   app=accounts-service
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] 
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] NAME                                           READY   STATUS      RESTARTS   AGE   IP            NODE                          NOMINATED NODE   READINESS GATES
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] pod/accounts-cd-run-deploy-pod                 0/1     Completed   0          12s   10.244.0.18   chart-testing-control-plane   <none>           <none>
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] pod/accounts-cd-run-flake8-lint-pod            0/1     Completed   0          53s   10.244.0.15   chart-testing-control-plane   <none>           <none>
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] pod/accounts-cd-run-image-build-and-push-pod   0/1     Completed   0          31s   10.244.0.17   chart-testing-control-plane   <none>           <none>
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] pod/accounts-cd-run-repository-clone-pod       0/1     Completed   0          58s   10.244.0.14   chart-testing-control-plane   <none>           <none>
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] pod/accounts-cd-run-unit-tests-nosetests-pod   0/1     Completed   0          45s   10.244.0.16   chart-testing-control-plane   <none>           <none>
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] pod/accounts-cd-run-verify-rollout-pod         2/2     Running     0          6s    10.244.0.22   chart-testing-control-plane   <none>           <none>
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] pod/accounts-cd-run-workspace-cleanup-pod      0/1     Completed   0          69s   10.244.0.12   chart-testing-control-plane   <none>           <none>
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] pod/accounts-service-5d9774f55-g7fsk           1/1     Running     0          7s    10.244.0.21   chart-testing-control-plane   <none>           <none>
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] pod/accounts-service-5d9774f55-kqqhf           1/1     Running     0          7s    10.244.0.20   chart-testing-control-plane   <none>           <none>
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] pod/accounts-service-5d9774f55-x5xk8           1/1     Running     0          7s    10.244.0.19   chart-testing-control-plane   <none>           <none>
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] pod/affinity-assistant-1c8a0cedb8-0            1/1     Running     0          69s   10.244.0.13   chart-testing-control-plane   <none>           <none>
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] 
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] NAME                                         DESIRED   CURRENT   READY   AGE   CONTAINERS         IMAGES                SELECTOR
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] replicaset.apps/accounts-service-5d9774f55   3         3         3       7s    accounts-service   accounts-service:ci   app=accounts-service,pod-template-hash=5d9774f55
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] 
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] NAME                       TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE   SELECTOR
+[pod/accounts-cd-run-verify-rollout-pod/step-resources] service/accounts-service   ClusterIP   10.96.150.15   <none>        8080/TCP   7s    app=accounts-service
+[pod/accounts-cd-run-verify-rollout-pod/prepare] 2026/10/21 20:38:46 Entrypoint initialization
+
+==== Complete Tekton TaskRun logs for pod: accounts-cd-run-workspace-cleanup-pod ====
+[pod/accounts-cd-run-workspace-cleanup-pod/prepare] 2026/10/21 20:37:49 Entrypoint initialization
+[pod/accounts-cd-run-workspace-cleanup-pod/step-clean] Workspace cleanup completed
+
+==== PipelineRun final condition ====
+Succeeded: True / Succeeded
