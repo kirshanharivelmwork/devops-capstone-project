@@ -106,3 +106,123 @@ class AccountsRouteTests(unittest.TestCase):
         )
         self.assertIn("POST", response.headers["Access-Control-Allow-Methods"])
         self.assertIn("content-type", response.headers["Access-Control-Allow-Headers"].lower())
+
+    def test_api_root_metadata(self):
+        """The root route identifies the Account REST API Service."""
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {"name": "Account REST API Service", "version": "1.0"})
+
+    def test_empty_accounts_list(self):
+        """A new service starts with an empty account listing."""
+        response = self.client.get("/accounts")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, [])
+
+    def test_create_returns_id(self):
+        """A created account contains an integer account identifier."""
+        response = self.client.post(
+            "/accounts", json={"name": "Pat", "email": "pat@example.org", "address": "1 Main St"}
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertIsInstance(response.json["id"], int)
+
+    def test_create_defaults_join_date(self):
+        """An account receives a valid default join date."""
+        response = self.client.post(
+            "/accounts", json={"name": "Pat", "email": "pat@example.org", "address": "1 Main St"}
+        )
+        self.assertRegex(response.json["date_joined"], r"^\\d{4}-\\d{2}-\\d{2}$")
+
+    def test_read_unknown_account(self):
+        """An unknown account returns 404 on GET."""
+        self.assertEqual(self.client.get("/accounts/999").status_code, 404)
+
+    def test_update_unknown_account(self):
+        """An unknown account returns 404 on PUT."""
+        self.assertEqual(self.client.put("/accounts/999", json={"name": "Pat"}).status_code, 404)
+
+    def test_delete_unknown_account(self):
+        """An unknown account returns 404 on DELETE."""
+        self.assertEqual(self.client.delete("/accounts/999").status_code, 404)
+
+    def test_create_missing_name(self):
+        """A CREATE request must include a name."""
+        response = self.client.post(
+            "/accounts", json={"email": "pat@example.org", "address": "1 Main St"}
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_missing_email(self):
+        """A CREATE request must include an email."""
+        response = self.client.post("/accounts", json={"name": "Pat", "address": "1 Main St"})
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_missing_address(self):
+        """A CREATE request must include an address."""
+        response = self.client.post(
+            "/accounts", json={"name": "Pat", "email": "pat@example.org"}
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_invalid_json(self):
+        """Non-JSON requests are rejected."""
+        self.assertEqual(self.client.post("/accounts", data="broken").status_code, 400)
+
+    def test_update_invalid_json(self):
+        """Non-JSON update requests are rejected."""
+        response = self.client.post(
+            "/accounts", json={"name": "Pat", "email": "pat@example.org", "address": "1 Main St"}
+        )
+        account_id = response.json["id"]
+        self.assertEqual(self.client.put(f"/accounts/{account_id}", data="bad").status_code, 400)
+
+    def test_update_name_persists(self):
+        """Updated customer names remain readable."""
+        response = self.client.post(
+            "/accounts", json={"name": "Pat", "email": "pat@example.org", "address": "1 Main St"}
+        )
+        account_id = response.json["id"]
+        self.assertEqual(
+            self.client.put(f"/accounts/{account_id}", json={"name": "New"}).status_code, 200
+        )
+        self.assertEqual(self.client.get(f"/accounts/{account_id}").json["name"], "New")
+
+    def test_update_phone_persists(self):
+        """Updated phone details remain readable."""
+        response = self.client.post(
+            "/accounts", json={"name": "Pat", "email": "pat@example.org", "address": "1 Main St"}
+        )
+        account_id = response.json["id"]
+        self.client.put(f"/accounts/{account_id}", json={"phone_number": "555-0123"})
+        self.assertEqual(
+            self.client.get(f"/accounts/{account_id}").json["phone_number"], "555-0123"
+        )
+
+    def test_delete_collection_requires_id(self):
+        """DELETE /accounts never deletes an entire collection by accident."""
+        self.assertEqual(self.client.delete("/accounts", json={}).status_code, 400)
+
+    def test_delete_collection_by_id(self):
+        """DELETE /accounts with an explicit ID deletes the selected account."""
+        response = self.client.post(
+            "/accounts", json={"name": "Pat", "email": "pat@example.org", "address": "1 Main St"}
+        )
+        account_id = response.json["id"]
+        self.assertEqual(self.client.delete("/accounts", json={"id": account_id}).status_code, 204)
+        self.assertEqual(self.client.get(f"/accounts/{account_id}").status_code, 404)
+
+    def test_it_should_return_a_cors_header(self):
+        """It should return a CORS header"""
+        response = self.client.get(
+            "/accounts", headers={"Origin": "http://localhost:3000"}
+        )
+        self.assertEqual(
+            response.headers.get("Access-Control-Allow-Origin"), "http://localhost:3000"
+        )
+
+    def test_it_should_return_security_headers(self):
+        """It should return security headers"""
+        response = self.client.get("/health")
+        self.assertIn("Content-Security-Policy", response.headers)
+        self.assertEqual(response.headers["X-Frame-Options"], "DENY")
