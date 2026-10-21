@@ -53,12 +53,24 @@ jobs:
       - name: Execute real Tekton PipelineRun
         run: |
           kubectl create -f tekton/accounts-cd-run.yaml
-          if ! kubectl wait --for=condition=Succeeded=True pipelinerun/accounts-cd-run --timeout=660s; then
-            kubectl describe pipelinerun accounts-cd-run
-            kubectl get pods -o wide
-            exit 1
-          fi
-          kubectl get pipelinerun accounts-cd-run
+          for attempt in $(seq 1 75); do
+            condition=$(kubectl get pipelinerun accounts-cd-run -o jsonpath='{.status.conditions[0].status}')
+            reason=$(kubectl get pipelinerun accounts-cd-run -o jsonpath='{.status.conditions[0].reason}')
+            echo "PipelineRun check $attempt: condition=$condition reason=$reason"
+            if [ "$condition" = "True" ]; then
+              kubectl get pipelinerun accounts-cd-run
+              exit 0
+            fi
+            if [ "$condition" = "False" ]; then
+              kubectl get taskruns,pods -o wide
+              kubectl describe pipelinerun accounts-cd-run
+              exit 1
+            fi
+            sleep 8
+          done
+          kubectl get taskruns,pods -o wide
+          kubectl describe pipelinerun accounts-cd-run
+          exit 1
 
       - name: Record complete PipelineRun and TaskRun logs
         if: always()
